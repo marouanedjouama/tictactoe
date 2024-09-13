@@ -1,6 +1,6 @@
 import { Square } from "./Square";
 
-export function Board({ xIsNext, squares, onPlay }) {
+export function Board({ xIsNext, squares, onPlay, gameModeIs1V1 }) {
   const lines = [
     [0, 1, 2],
     [3, 4, 5],
@@ -35,14 +35,80 @@ export function Board({ xIsNext, squares, onPlay }) {
   }
 
   function handleClick(i) {
-    if (squares[i] || calculateWinner(squares) !== null) {
-      /* return when draw, or there is a winner, or the square[i] is true */
+    if (
+      (!gameModeIs1V1 && !xIsNext) ||
+      squares[i] ||
+      calculateWinner(squares) !== null
+    ) {
       return;
+    }
+
+    if (gameModeIs1V1) {
     }
 
     const nextSquares = squares.slice();
     nextSquares[i] = xIsNext ? "X" : "O";
     onPlay(nextSquares);
+  }
+
+  function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function computer_turn() {
+    if (calculateWinner(squares) !== null) {
+      return;
+    }
+
+    let position_to_play = null;
+
+    if (!squares[4]) {
+      // take the middle if available
+      position_to_play = 4;
+    } else {
+      lines.every((line) => {
+        // if x is going to win, block him, or if o has a chance to win, take it
+        let xcount = line.filter((element) => squares[element] === "X").length;
+        let ocount = line.filter((element) => squares[element] === "O").length;
+        console.log(`xcount : ${xcount}`);
+
+        if (Math.max(xcount, ocount) === 2) {
+          for (let i = 0; i < 3; i++) {
+            if (!squares[line[i]]) {
+              position_to_play = line[i];
+              console.log(`ocoposition_to_playunt : ${position_to_play}`);
+              return false; // i actually want to break from the foreach loop
+            }
+          }
+        }
+        return true;
+      });
+    }
+
+    // random move
+    if (!position_to_play) {
+      while (true) {
+        let index = getRandomInt(0, 8);
+        if (!squares[index]) {
+          position_to_play = index;
+          break;
+        }
+      }
+    }
+
+    const nextSquares = squares.slice();
+    nextSquares[position_to_play] = "O";
+    onPlay(nextSquares);
+  }
+
+  if (!gameModeIs1V1) {
+    if (!xIsNext) {
+      setTimeout(() => {
+        computer_turn();
+      }, 600);
+    }
   }
 
   const i = calculateWinner(squares);
@@ -89,10 +155,8 @@ export function Board({ xIsNext, squares, onPlay }) {
 
   return (
     <>
-      <div className="status">
-        <b>{status}</b>
-      </div>
-      {boardRows}
+      <div className="status">{status}</div>
+      <div className="x-o-board">{boardRows}</div>
     </>
   );
 }
